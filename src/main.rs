@@ -1,7 +1,7 @@
 extern crate image;
 
 
-// implémentation de fonctions diverses
+// implémentation des fonctions clées
 
 fn real_mod(x: f32, y: f32) -> f32
 {
@@ -45,6 +45,29 @@ fn phi_inv(y: f32) -> f32
     let f = 2.0*pi+d;
     let y_mod = real_mod(y, 2.0*pi)+d;
     phi_inv_aux(y_mod, d, f, pre)
+}
+
+
+/**
+* fonction donnant la hauteur d'une vague
+* en fonction de l'avancement x (spatial ou temporel, peu importe)
+* et de l'amplitude ampl
+*/
+fn wave(x: f32, ampl: f32) -> f32
+{
+    ampl*(phi_inv(x/ampl)).sin()
+}
+
+
+/**
+* comme précedemment, mais avec un espace discrétisé
+* en fenêtres de largeur window
+* le temps est alors à part pour pouvoir échapper à la discrétisation
+*/
+fn discrete_wave(x: f32, t: f32, ampl: f32, window: f32) -> f32
+{
+    let progression = x - real_mod(x, window)+window/2.0+t;
+    wave(progression, ampl)
 }
 
 
@@ -123,18 +146,6 @@ fn real_to_display( (x, y): (f32,f32),
     {
         (w/2, h/2)
     }
-}
-
-fn wave(x: f32, ampl: f32) -> f32
-{
-    ampl*(phi_inv(x/ampl)).sin()
-}
-
-
-fn discrete_wave(x: f32, t: f32, ampl: f32, window: f32) -> f32
-{
-    let progression = x - real_mod(x, window)+window/2.0+t;
-    wave(progression, ampl)
 }
 
 
