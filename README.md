@@ -38,8 +38,11 @@ And then I got borred and tried to display all of that in a fancy way.
 # How to run
 
 get cargo and a terminal
+
 \>cargo run
-and there it should process a bit a create a lot of images in images/
+
+And there it should process a bit a create a lot of images in images/
 Then you can use ffmpeg or something to make it into a git
 (because animations are greate to visualize things that are supposed to *move*)
+
 \>ffmpeg -f image2 -i 'images/frame_%03d.jpg' wave.gif
