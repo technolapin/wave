@@ -35,7 +35,7 @@ For now, it works in O( log(1/precision) ) but I may find something even better 
 And then I got borred and tried to display all of that in a fancy way.
 
 
-#How to run
+# How to run
 
 get cargo and a terminal
 >cargo run
