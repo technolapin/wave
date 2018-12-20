@@ -163,6 +163,7 @@ fn main() {
     let dims = (w, h);
 
     let pix_bleu = image::Rgb([0, 0, 255]);    
+    let pix_rouge = image::Rgb([255, 0, 0]);    
 
     let amplitude = 4.0;
     let nombre_frames = 200;
@@ -185,7 +186,10 @@ fn main() {
             for k in j..h
             {
                 place_pixel(&mut img, (i, k), pix_bleu);
-            }            
+            }
+            let z = wave(x+speed*t, amplitude);
+            let (_,j) = real_to_display((0.0, z), res, dims);
+            place_pixel(&mut img, (i, j), pix_rouge);
             
         }
         img.save(
