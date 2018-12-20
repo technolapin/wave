@@ -1,0 +1,54 @@
+fn main() {
+    println!("Hello, world!");
+}
+
+
+fn f( x: f64 ) -> f64
+{
+    x + x.cos()
+}
+// On veut implémenter phi: R -> R la fonction inverse de f
+
+fn d0phi_de_f ( x: f64) -> f64
+{
+    x
+}
+
+fn d1phi_de_f ( x: f64) -> f64
+{
+    1. / ( 1. - x.sin() )
+}
+
+fn d2phi_de_f ( x: f64) -> f64
+{
+    x.cos() * d1phi_de_f( x ).powi(3)
+}
+fn d3phi_de_f ( x: f64) -> f64
+{
+    - x.sin() / d1phi_de_f( x ).powi( 4 )
+        * ( 3. * x.cos() / d1phi_de_f( x ) - 1.0 )
+        
+}
+fn d4phi_de_f ( x: f64) -> f64
+{
+    - x.cos() / d1phi_de_f( x ).powi( 5 )
+    + 1.0     / d1phi_de_f( x ).powi( 6 ) *
+        ( -3. * x.cos().powi( 2 ) - 4.0 * x.cos()*x.sin() + 3.*x.sin().powi( 2 ) )
+    + 1.0 / d1phi_de_f( x ).powi( 7 ) *
+        ( -12. * x.cos().powi(2) * x.sin() + 3.0 * x.cos() * x.sin().powi(2) )
+}
+
+
+fn phi( x: f64, p: f64 ) -> f64
+{
+    let l = (x/p).floor();
+    let pl = p*l;
+    
+    d0phi_de_f ( pl )     / 1.   * (x - pl) +
+        d1phi_de_f ( pl ) / 2.   * (x - pl) +
+        d2phi_de_f ( pl ) / 6.   * (x - pl) +
+        d3phi_de_f ( pl ) / 24.  * (x - pl) +
+        d4phi_de_f ( pl ) / 125. * (x - pl)
+        
+}
+
