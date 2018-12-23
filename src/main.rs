@@ -1,112 +1,117 @@
 extern crate image;
 
+use std::f32;
+use f32::consts::PI;
+use f32::consts::FRAC_PI_2;
 
-// implémentation des fonctions clées
+const PROD_PI_2: f32 = 2.0*PI;
+const BORNE_INF_DICHO: f32 = FRAC_PI_2;
+const BORNE_SUP_DICHO: f32 = FRAC_PI_2+PROD_PI_2;
 
+// this is the maximum error of height
+// you can change this as you wish
+// 0.01 looks far enought in this example
+const PRECISION: f32 = 0.01;
+
+// all the mattering functions :
+
+
+/// return x modulo y
 fn real_mod(x: f32, y: f32) -> f32
 {
     x - y*(x/y).floor()
 }
 
+
+/// the function φ whom inverse function Φ is needed
 fn phi(x: f32) -> f32
 {
     x + x.cos()
 }
 
-
-fn phi_inv_aux(y: f32, d: f32, f: f32, pre: f32) -> f32
+/**
+* the dichotomic algorithm to get Φ(y)
+* when starting < Φ(y) < ending 
+*/
+fn phi_inv_aux(
+    y: f32,
+    starting: f32,
+    ending: f32,
+) -> f32
 {
-    let m = (d+f)/2.0;
-    if f-d < pre
+    let middle = (starting+ending)/2.0;
+    if ending-starting < PRECISION
     {
-        m
+        middle
     }
-    else if phi(m) >= y
+    else if phi(middle) >= y
     {
-        phi_inv_aux(y, d, m, pre)
+        phi_inv_aux(y, starting, middle)
     }
     else
     {
-        phi_inv_aux(y, m, f, pre)
+        phi_inv_aux(y, middle, ending)
     }
 }
 
-/**
-* la fonction clée pas du tout optimisée
-* la précision se règle ici (et donc la rapidité)
-* 0.01 me semble amplement suffisant
-*/
+/// the implementation of the inverse function Φ
 fn phi_inv(y: f32) -> f32
 {
-    let pre = 0.01; // la précision, sachant que la complexité est en log(1/pre)
-    let pi = f32::consts::PI;
+    // we only need to calculate it on [pi/2, 5pi/2]
+    // because it'll used in a sinus, and
+    // for any real x and any integer k,
+    // Φ(x+k*pi) = Φ(x) + k*pi (trust me (really))
+    let y_mod = real_mod(y, PROD_PI_2)+FRAC_PI_2;
+    phi_inv_aux(
+        y_mod,
+        BORNE_INF_DICHO,
+        BORNE_SUP_DICHO
+    )
+}
+
+
+/**
+* the function that returns the height of a wave
+* at a given spatio-temporal advancement.
+* wave(x) = R*sin(Φ(x/R)) if R is the amplitude
+*/
+fn wave(
+    progression: f32,
+    amplitude: f32
+) -> f32
+{
+    amplitude*( phi_inv( progression/amplitude ) ).sin()
+}
+
+
+/**
+* same as wave(), but space is discrete, so both temporal and spatial dimensions
+* has to be processed separatly
+*/
+fn discrete_wave(
+    spatial_progression: f32,
+    temporal_progression: f32,
+    amplitude: f32,
+    window: f32
+) -> f32
+{
+    let progression =
+        spatial_progression
+        - real_mod( spatial_progression, window )
+        + window/2.0
+        + temporal_progression;
     
-    let d = pi / 2.0;
-    let f = 2.0*pi+d;
-    let y_mod = real_mod(y, 2.0*pi)+d;
-    phi_inv_aux(y_mod, d, f, pre)
+    wave( progression, amplitude )
 }
 
+////////////////////////////////////////////////////////////////////////////
+// don't bother for the rest, it's just to make the pictures and run a test.
+// and it might hurt your feelings
 
-/**
-* fonction donnant la hauteur d'une vague
-* en fonction de l'avancement x (spatial ou temporel, peu importe)
-* et de l'amplitude ampl
-*/
-fn wave(x: f32, ampl: f32) -> f32
-{
-    ampl*(phi_inv(x/ampl)).sin()
-}
-
-
-/**
-* comme précedemment, mais avec un espace discrétisé
-* en fenêtres de largeur window
-* le temps est alors à part pour pouvoir échapper à la discrétisation
-*/
-fn discrete_wave(x: f32, t: f32, ampl: f32, window: f32) -> f32
-{
-    let progression = x - real_mod(x, window)+window/2.0+t;
-    wave(progression, ampl)
-}
-
-
-// Après c'est pour l'affichage
-
-
-fn trace(
+fn place_pixel(
     img: &mut image::RgbImage,
-    x: f32,
-    y: f32,
-    w: u32,
-    h: u32,
-    dx: f32,
-    dy: f32,
-    res_x: f32,
-    res_y: f32,
+    (x, y): (u32,u32),
     pix: image::Rgb<u8>
-)
-{
-    let real_x = x + dx*2.0;
-    let real_y = y + dy*2.0;
-
-    if real_x >= 0.0 && real_x < res_x*(w as f32)
-    {
-        (*img).put_pixel((real_x/res_x) as u32,
-                         (real_y/res_y) as u32,
-                      pix);
-    }
-    else
-    {
-        (*img).put_pixel(0,
-                      0,
-                      image::Rgb([255,0,0]));
-    }
-}
-
-fn place_pixel(img: &mut image::RgbImage,
-               (x, y): (u32,u32),
-               pix: image::Rgb<u8>
 )
 {
     let (w, h) = (*img).dimensions();
@@ -120,9 +125,11 @@ fn place_pixel(img: &mut image::RgbImage,
     }
 }
 
-fn display_to_real( (x, y): (u32,u32),
-                     (res_x, res_y): (f32,f32),
-                     (w, h): (u32,u32) ) -> (f32,f32)
+fn display_to_real(
+    (x, y): (u32,u32),
+    (res_x, res_y): (f32,f32),
+    (w, h): (u32,u32)
+) -> (f32,f32)
 {
     let real_x =   ( (x as f32) - ((w/2) as f32) )*res_x;
     let real_y = - ( (y as f32) - ((h/2) as f32) )*res_y;
@@ -130,9 +137,11 @@ fn display_to_real( (x, y): (u32,u32),
     (real_x, real_y)
 }
 
-fn real_to_display( (x, y): (f32,f32),
-                     (res_x, res_y): (f32,f32),
-                     (w, h): (u32,u32) ) -> (u32,u32)
+fn real_to_display(
+    (x, y): (f32,f32),
+    (res_x, res_y): (f32,f32),
+    (w, h): (u32,u32)
+) -> (u32,u32)
 {
     let i = (x/res_x) as i32 + (w/2) as i32;
     let j = -(y/res_y) as i32 + (h/2) as i32;
@@ -150,9 +159,8 @@ fn real_to_display( (x, y): (f32,f32),
 
 
 
-use std::f32;
 fn main() {
-
+    
     let w = 1000;
     let h = 500;
     let pi = f32::consts::PI;
